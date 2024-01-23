@@ -3,4 +3,33 @@ on:
   push:
     branches:
       - main
-      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set env
+        run: echo "GITHUB_BRANCH=$(echo $GITHUB_REF_NAME-$GITHUB_SHA)" >> $GITHUB_ENV  
+ 
+      - name: Docker Login
+        env:
+          DOCKER_USERNAME: ${{secrets.DOCKER_USERNAME}}
+          DOCKER_PASSWORD: ${{secrets.DOCKER_PASSWORD}}
+        run: |
+             docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+             docker build -t kshitijg/devops:$GITHUB_REF_NAME-$GITHUB_SHA .
+             docker push kshitijg/devops:$GITHUB_REF_NAME-$GITHUB_SHA
+      - name: Update manifest file
+        run: |
+          git clone https://${{ secrets.GITHUBTOKEN }}@github.com/kshitijwohlig/DevOps-Assessment-Gitops.git
+          echo ${{ secrets.GITHUBTOKEN }}
+          cd DevOps-Assessment-Gitops
+          git checkout main
+          git config user.name "kshitijwohlig"
+          git config user.email "kshitij.gaikwad@wohlig.com"
+          yq e '.spec.template.spec.containers[0].image = "kshitijg/devops:${{ env.GITHUB_BRANCH }}"' -i deployments.yml
+          git add .
+          git commit -m "updating newer image"
+          git status
+          git push origin main
