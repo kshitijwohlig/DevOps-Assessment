@@ -17,7 +17,7 @@ app.get('/about', (req, res) => {
   res.send('Hello About');
 });
 app.get('/contact', (req, res) => {
-  res.send('Hello Contact');
+  res.send('Hello Contact ');
 });
 
 app.listen(PORT, () => {
